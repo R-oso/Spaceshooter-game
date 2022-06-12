@@ -7,6 +7,8 @@ export class Player extends PIXI.Sprite {
   private yspeed: number = 0;
   private game: Game;
 
+  public power_up: boolean = false;
+
   constructor(texture: PIXI.Texture, game: Game) {
     super(texture);
     this.game = game;
@@ -64,6 +66,11 @@ export class Player extends PIXI.Sprite {
         this.yspeed = 0;
         break;
     }
+  }
+
+  public powerUp() {
+    this.power_up = true;
+    console.log(this.power_up);
   }
 
   public update() {
