@@ -521,15 +521,21 @@ parcelHelpers.export(exports, "Game", ()=>Game
 var _pixiJs = require("pixi.js");
 var _bullet = require("./Bullet");
 var _player = require("./player");
+var _cargoShip = require("./Cargo_ship");
+var _explosion = require("./Explosion");
 var _backgroundWebp = require("./images/background.webp");
 var _backgroundWebpDefault = parcelHelpers.interopDefault(_backgroundWebp);
 var _shipPng = require("./images/ship.png");
 var _shipPngDefault = parcelHelpers.interopDefault(_shipPng);
 var _bulletPng = require("./images/bullet.png");
 var _bulletPngDefault = parcelHelpers.interopDefault(_bulletPng);
+var _cargoShipPng = require("./images/cargo_ship.png");
+var _cargoShipPngDefault = parcelHelpers.interopDefault(_cargoShipPng);
 class Game {
     playerTextures = [];
     bullets = [];
+    cargo_ships = [];
+    explosionTextures = [];
     screenWidth = 2400;
     screenHeight = 1500;
     // Game functies
@@ -543,7 +549,7 @@ class Game {
         document.body.appendChild(this.pixi.view);
         // Preload alle afbeeldingen
         this.loader = new _pixiJs.Loader();
-        this.loader.add("bgTexture", _backgroundWebpDefault.default).add("playerTexture", _shipPngDefault.default).add("bulletTexture", _bulletPngDefault.default);
+        this.loader.add("bgTexture", _backgroundWebpDefault.default).add("playerTexture", _shipPngDefault.default).add("bulletTexture", _bulletPngDefault.default).add("cargoTexture", _cargoShipPngDefault.default).add("spritesheet", "explosion.json");
         this.loader.load(()=>this.loadCompleted()
         );
     }
@@ -558,7 +564,12 @@ class Game {
             const player = _pixiJs.Texture.from(`player.json ${i + 1}.png`);
             this.playerTextures.push(player);
         }
+        // Create de bestuurbare player
         this.createPlayer();
+        // Create de cargo ships
+        this.createCargoships();
+        // Create de eplosion frames
+        this.createExplosionFrames();
         this.pixi.ticker.add((delta)=>this.update(delta)
         );
     }
@@ -566,11 +577,23 @@ class Game {
         // Update background, player
         this.background.tilePosition.y += 3;
         this.player.update();
+        // Update functie in bullet
         for (let bullet of this.bullets)bullet.update();
+        // Update functie in cargo_ship
+        for (let cargo_ship of this.cargo_ships)cargo_ship.update();
+        // check collisions
+        this.checkCollisions();
     }
     createPlayer() {
         this.player = new _player.Player(this.loader.resources["playerTexture"].texture, this);
         this.pixi.stage.addChild(this.player);
+    }
+    createCargoships() {
+        for(let i = 0; i < 4; i++){
+            let c = new _cargoShip.Cargo_ship(this.loader.resources["cargoTexture"].texture, this);
+            this.cargo_ships.push(c);
+            this.pixi.stage.addChild(c);
+        }
     }
     addBullet(x, y) {
         let b = new _bullet.Bullet(this.loader.resources["bulletTexture"].texture, this, x, y);
@@ -582,15 +605,39 @@ class Game {
         );
         bullet.destroy();
     }
-    collision(bullet, enemy) {
+    checkCollisions() {
+        for (let bullet of this.bullets){
+            for (let cargo_ship of this.cargo_ships)if (this.collision(bullet, cargo_ship)) {
+                this.createExplosion(bullet.x, bullet.y);
+                console.log("hit");
+                this.player.powerUp();
+                this.removeBullet(bullet);
+                cargo_ship.resetPosition();
+                break;
+            }
+        }
+    }
+    collision(bullet, cargo_ship) {
         const bounds1 = bullet.getBounds();
-        const bounds2 = enemy.getBounds();
+        const bounds2 = cargo_ship.getBounds();
         return bounds1.x < bounds2.x + bounds2.width && bounds1.x + bounds1.width > bounds2.x && bounds1.y < bounds2.y + bounds2.height && bounds1.y + bounds1.height > bounds2.y;
+    }
+    createExplosionFrames() {
+        for(let i = 0; i < 26; i++){
+            const texture = _pixiJs.Texture.from(`Explosion_Sequence_A ${i + 1}.png`);
+            console.log(texture);
+            this.explosionTextures.push(texture);
+        }
+    }
+    createExplosion(x, y) {
+        const explosion = new _explosion.Explosion(this.explosionTextures, x, y);
+        console.log(explosion);
+        this.pixi.stage.addChild(explosion);
     }
 }
 let g = new Game();
 
-},{"pixi.js":"dsYej","./Bullet":"9oYKj","./player":"8YLWx","./images/background.webp":"iMzf7","./images/ship.png":"7QuFQ","./images/bullet.png":"gTu2s","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dsYej":[function(require,module,exports) {
+},{"pixi.js":"dsYej","./Bullet":"9oYKj","./player":"8YLWx","./Cargo_ship":"7Yf7u","./Explosion":"33ylU","./images/background.webp":"iMzf7","./images/ship.png":"7QuFQ","./images/bullet.png":"gTu2s","./images/cargo_ship.png":"lEgYS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dsYej":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "utils", ()=>_utils
@@ -37126,6 +37173,7 @@ var _pixiJs = require("pixi.js");
 class Player extends _pixiJs.Sprite {
     xspeed = 0;
     yspeed = 0;
+    power_up = false;
     constructor(texture, game){
         super(texture);
         this.game = game;
@@ -37181,9 +37229,75 @@ class Player extends _pixiJs.Sprite {
                 break;
         }
     }
+    powerUp() {
+        this.power_up = true;
+        console.log(this.power_up);
+    }
     update() {
         this.x += this.xspeed;
         this.y += this.yspeed;
+    }
+}
+
+},{"pixi.js":"dsYej","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"7Yf7u":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "Cargo_ship", ()=>Cargo_ship
+);
+var _enemy = require("./Enemy");
+class Cargo_ship extends _enemy.Enemy {
+    constructor(texture, game){
+        super(texture, game);
+        this.scale.set(2.3, 2.3);
+        this.x = Math.floor(Math.random() * -1000) + -400;
+        this.y = Math.random() * game.pixi.screen.bottom;
+        this.speed = Math.random() * -6 + -1;
+    }
+    resetPosition() {
+        // Random number between 200 and 400 (Min and Max)
+        this.x = Math.floor(Math.random() * -200) + -200;
+    }
+    update() {
+        this.x -= this.speed;
+        if (this.x >= 3000) this.resetPosition();
+    }
+}
+
+},{"./Enemy":"g0Hmc","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"g0Hmc":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "Enemy", ()=>Enemy
+);
+var _pixiJs = require("pixi.js");
+class Enemy extends _pixiJs.Sprite {
+    speed = 0;
+    constructor(texture, game){
+        super(texture);
+    }
+    update() {
+        this.x -= this.speed;
+    }
+}
+
+},{"pixi.js":"dsYej","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"33ylU":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "Explosion", ()=>Explosion
+);
+var _pixiJs = require("pixi.js");
+class Explosion extends _pixiJs.AnimatedSprite {
+    constructor(explosionTextures, x, y){
+        super(explosionTextures);
+        this.anchor.set(0.5);
+        this.x = x;
+        this.y = y;
+        // this.rotation = Math.random() * Math.PI
+        this.scale.set(0.4 + Math.random() * 0.5);
+        this.animationSpeed = 0.5;
+        this.loop = false;
+        this.onComplete = ()=>this.destroy()
+        ;
+        this.play();
     }
 }
 
@@ -37229,6 +37343,9 @@ module.exports = require('./helpers/bundle-url').getBundleURL('jXrpa') + "ship.7
 
 },{"./helpers/bundle-url":"lgJ39"}],"gTu2s":[function(require,module,exports) {
 module.exports = require('./helpers/bundle-url').getBundleURL('jXrpa') + "bullet.3dbbe9b9.png" + "?" + Date.now();
+
+},{"./helpers/bundle-url":"lgJ39"}],"lEgYS":[function(require,module,exports) {
+module.exports = require('./helpers/bundle-url').getBundleURL('jXrpa') + "cargo_ship.3a7e8659.png" + "?" + Date.now();
 
 },{"./helpers/bundle-url":"lgJ39"}]},["5EqNz","TyEjs"], "TyEjs", "parcelRequirea0e5")
 
