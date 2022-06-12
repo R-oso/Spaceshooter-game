@@ -1,11 +1,13 @@
 import * as PIXI from "pixi.js";
 import { Bullet } from "./Bullet";
 import { Player } from "./player";
-import { Enemy } from "./Enemy";
+import { Cargo_ship } from "./Cargo_ship";
+import { Explosion } from "./Explosion";
 
 import background from "./images/background.webp";
 import player from "./images/ship.png";
 import bullet from "./images/bullet.png";
+import cargo_ship from "./images/cargo_ship.png";
 
 export class Game {
   // Game eigenschappen
@@ -16,6 +18,8 @@ export class Game {
 
   private player: Player;
   private bullets: Bullet[] = [];
+  private cargo_ships: Cargo_ship[] = [];
+  private explosionTextures: PIXI.Texture[] = [];
 
   screenWidth: number = 2400;
   screenHeight: number = 1500;
@@ -30,7 +34,7 @@ export class Game {
 
     // Preload alle afbeeldingen
     this.loader = new PIXI.Loader();
-    this.loader.add("bgTexture", background).add("playerTexture", player).add("bulletTexture", bullet);
+    this.loader.add("bgTexture", background).add("playerTexture", player).add("bulletTexture", bullet).add("cargoTexture", cargo_ship).add("spritesheet", "explosion.json");
     this.loader.load(() => this.loadCompleted());
   }
 
@@ -47,7 +51,15 @@ export class Game {
       this.playerTextures.push(player);
     }
 
+    // Create de bestuurbare player
     this.createPlayer();
+
+    // Create de cargo ships
+    this.createCargoships();
+
+    // Create de eplosion frames
+    this.createExplosionFrames();
+
     this.pixi.ticker.add((delta) => this.update(delta));
   }
 
@@ -56,14 +68,31 @@ export class Game {
     this.background.tilePosition.y += 3;
     this.player.update();
 
+    // Update functie in bullet
     for (let bullet of this.bullets) {
       bullet.update();
     }
+
+    // Update functie in cargo_ship
+    for (let cargo_ship of this.cargo_ships) {
+      cargo_ship.update();
+    }
+
+    // check collisions
+    this.checkCollisions();
   }
 
   private createPlayer() {
     this.player = new Player(this.loader.resources["playerTexture"].texture!, this);
     this.pixi.stage.addChild(this.player);
+  }
+
+  private createCargoships() {
+    for (let i = 0; i < 4; i++) {
+      let c = new Cargo_ship(this.loader.resources["cargoTexture"].texture!, this);
+      this.cargo_ships.push(c);
+      this.pixi.stage.addChild(c);
+    }
   }
 
   public addBullet(x: number, y: number) {
@@ -77,11 +106,39 @@ export class Game {
     bullet.destroy();
   }
 
-  private collision(bullet: Bullet, enemy: Enemy) {
-    const bounds1 = bullet.getBounds();
-    const bounds2 = enemy.getBounds();
+  private checkCollisions() {
+    for (let bullet of this.bullets) {
+      for (let cargo_ship of this.cargo_ships) {
+        if (this.collision(bullet, cargo_ship)) {
+          this.createExplosion(bullet.x, bullet.y);
+          console.log("hit");
+          this.player.powerUp();
+          this.removeBullet(bullet);
+          cargo_ship.resetPosition();
+          break;
+        }
+      }
+    }
+  }
 
+  private collision(bullet: Bullet, cargo_ship: Cargo_ship) {
+    const bounds1 = bullet.getBounds();
+    const bounds2 = cargo_ship.getBounds();
     return bounds1.x < bounds2.x + bounds2.width && bounds1.x + bounds1.width > bounds2.x && bounds1.y < bounds2.y + bounds2.height && bounds1.y + bounds1.height > bounds2.y;
+  }
+
+  private createExplosionFrames() {
+    for (let i = 0; i < 26; i++) {
+      const texture = PIXI.Texture.from(`Explosion_Sequence_A ${i + 1}.png`);
+      console.log(texture);
+      this.explosionTextures.push(texture);
+    }
+  }
+
+  public createExplosion(x: number, y: number) {
+    const explosion = new Explosion(this.explosionTextures, x, y);
+    console.log(explosion);
+    this.pixi.stage.addChild(explosion);
   }
 }
 
