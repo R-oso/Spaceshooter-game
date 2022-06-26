@@ -2,7 +2,7 @@ import * as PIXI from "pixi.js";
 import { Game } from "./Game";
 
 export class Bullet extends PIXI.Sprite {
-  private game: Game;
+  public game: Game;
 
   constructor(texture: PIXI.Texture, game: Game, x: number, y: number) {
     super(texture);
