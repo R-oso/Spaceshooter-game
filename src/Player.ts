@@ -5,6 +5,7 @@ import { Bullet } from "./Bullet";
 export class Player extends PIXI.Sprite {
   private xspeed: number = 0;
   private yspeed: number = 0;
+  private health: number = 3;
   private game: Game;
 
   public power_up: boolean = false;
@@ -71,6 +72,11 @@ export class Player extends PIXI.Sprite {
   public powerUp() {
     this.power_up = true;
     console.log(this.power_up);
+  }
+
+  public damage() {
+    this.health -= 1;
+    console.log("you got hit");
   }
 
   public update() {
