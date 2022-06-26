@@ -520,8 +520,10 @@ parcelHelpers.export(exports, "Game", ()=>Game
 );
 var _pixiJs = require("pixi.js");
 var _bullet = require("./Bullet");
+var _enemyBullet = require("./Enemy_bullet");
 var _player = require("./player");
 var _cargoShip = require("./Cargo_ship");
+var _shootingShip = require("./Shooting_ship");
 var _explosion = require("./Explosion");
 var _backgroundWebp = require("./images/background.webp");
 var _backgroundWebpDefault = parcelHelpers.interopDefault(_backgroundWebp);
@@ -531,10 +533,14 @@ var _bulletPng = require("./images/bullet.png");
 var _bulletPngDefault = parcelHelpers.interopDefault(_bulletPng);
 var _cargoShipPng = require("./images/cargo_ship.png");
 var _cargoShipPngDefault = parcelHelpers.interopDefault(_cargoShipPng);
+var _shootingShipPng = require("./images/shooting_ship.png");
+var _shootingShipPngDefault = parcelHelpers.interopDefault(_shootingShipPng);
 class Game {
     playerTextures = [];
     bullets = [];
+    enemy_bullets = [];
     cargo_ships = [];
+    shooting_ships = [];
     explosionTextures = [];
     screenWidth = 2400;
     screenHeight = 1500;
@@ -549,7 +555,7 @@ class Game {
         document.body.appendChild(this.pixi.view);
         // Preload alle afbeeldingen
         this.loader = new _pixiJs.Loader();
-        this.loader.add("bgTexture", _backgroundWebpDefault.default).add("playerTexture", _shipPngDefault.default).add("bulletTexture", _bulletPngDefault.default).add("cargoTexture", _cargoShipPngDefault.default).add("spritesheet", "explosion.json");
+        this.loader.add("bgTexture", _backgroundWebpDefault.default).add("playerTexture", _shipPngDefault.default).add("bulletTexture", _bulletPngDefault.default).add("cargoTexture", _cargoShipPngDefault.default).add("shootingTexture", _shootingShipPngDefault.default).add("spriteSheet", "explosion.json");
         this.loader.load(()=>this.loadCompleted()
         );
     }
@@ -559,15 +565,12 @@ class Game {
         this.background = new _pixiJs.TilingSprite(this.loader.resources["bgTexture"].texture, this.screenWidth, this.screenHeight);
         this.background.tileScale.set(2, 2);
         this.pixi.stage.addChild(this.background);
-        // Sla de player sprite sheet op
-        for(let i = 0; i < 26; i++){
-            const player = _pixiJs.Texture.from(`player.json ${i + 1}.png`);
-            this.playerTextures.push(player);
-        }
         // Create de bestuurbare player
         this.createPlayer();
         // Create de cargo ships
         this.createCargoships();
+        // Create de shooting ships
+        this.createShootingships();
         // Create de eplosion frames
         this.createExplosionFrames();
         this.pixi.ticker.add((delta)=>this.update(delta)
@@ -581,8 +584,11 @@ class Game {
         for (let bullet of this.bullets)bullet.update();
         // Update functie in cargo_ship
         for (let cargo_ship of this.cargo_ships)cargo_ship.update();
-        // check collisions
+        // Update functie in shooting_ship
+        for (let shooting_ship of this.shooting_ships)shooting_ship.update();
+        // Check collisions
         this.checkCollisions();
+        this.playerDamage();
     }
     createPlayer() {
         this.player = new _player.Player(this.loader.resources["playerTexture"].texture, this);
@@ -595,9 +601,21 @@ class Game {
             this.pixi.stage.addChild(c);
         }
     }
+    createShootingships() {
+        for(let i = 0; i < 5; i++){
+            let s = new _shootingShip.Shooting_ship(this.loader.resources["shootingTexture"].texture, this);
+            this.shooting_ships.push(s);
+            this.pixi.stage.addChild(s);
+        }
+    }
     addBullet(x, y) {
         let b = new _bullet.Bullet(this.loader.resources["bulletTexture"].texture, this, x, y);
         this.bullets.push(b);
+        this.pixi.stage.addChild(b);
+    }
+    addEnemyBullet(x, y) {
+        let b = new _enemyBullet.Enemy_bullet(this.loader.resources["bulletTexture"].texture, this, x, y);
+        this.enemy_bullets.push(b);
         this.pixi.stage.addChild(b);
     }
     removeBullet(bullet) {
@@ -617,15 +635,20 @@ class Game {
             }
         }
     }
-    collision(bullet, cargo_ship) {
-        const bounds1 = bullet.getBounds();
-        const bounds2 = cargo_ship.getBounds();
+    playerDamage() {
+        for (let cargo_ship of this.cargo_ships)if (this.collision(this.player, cargo_ship)) {
+            this.player.damage();
+            break;
+        }
+    }
+    collision(sprite1, sprite2) {
+        const bounds1 = sprite1.getBounds();
+        const bounds2 = sprite2.getBounds();
         return bounds1.x < bounds2.x + bounds2.width && bounds1.x + bounds1.width > bounds2.x && bounds1.y < bounds2.y + bounds2.height && bounds1.y + bounds1.height > bounds2.y;
     }
     createExplosionFrames() {
         for(let i = 0; i < 26; i++){
             const texture = _pixiJs.Texture.from(`Explosion_Sequence_A ${i + 1}.png`);
-            console.log(texture);
             this.explosionTextures.push(texture);
         }
     }
@@ -637,7 +660,7 @@ class Game {
 }
 let g = new Game();
 
-},{"pixi.js":"dsYej","./Bullet":"9oYKj","./player":"8YLWx","./Cargo_ship":"7Yf7u","./Explosion":"33ylU","./images/background.webp":"iMzf7","./images/ship.png":"7QuFQ","./images/bullet.png":"gTu2s","./images/cargo_ship.png":"lEgYS","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dsYej":[function(require,module,exports) {
+},{"pixi.js":"dsYej","./Bullet":"9oYKj","./Enemy_bullet":"bm1jq","./player":"8YLWx","./Cargo_ship":"7Yf7u","./Shooting_ship":"3x8wK","./Explosion":"33ylU","./images/background.webp":"iMzf7","./images/ship.png":"7QuFQ","./images/bullet.png":"gTu2s","./images/cargo_ship.png":"lEgYS","./images/shooting_ship.png":"gUqvW","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dsYej":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "utils", ()=>_utils
@@ -37164,7 +37187,27 @@ class Bullet extends _pixiJs.Sprite {
     }
 }
 
-},{"pixi.js":"dsYej","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"8YLWx":[function(require,module,exports) {
+},{"pixi.js":"dsYej","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"bm1jq":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "Enemy_bullet", ()=>Enemy_bullet
+);
+var _bullet = require("./Bullet");
+class Enemy_bullet extends _bullet.Bullet {
+    constructor(texture, game, x, y){
+        super(texture, game, x, y);
+        this.pivot.y = -30;
+    }
+    update() {
+        this.y += 8;
+        if (this.y > 2000) {
+            this.alpha -= 0.001;
+            this.game.removeBullet(this);
+        }
+    }
+}
+
+},{"./Bullet":"9oYKj","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"8YLWx":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "Player", ()=>Player
@@ -37173,6 +37216,7 @@ var _pixiJs = require("pixi.js");
 class Player extends _pixiJs.Sprite {
     xspeed = 0;
     yspeed = 0;
+    health = 3;
     power_up = false;
     constructor(texture, game){
         super(texture);
@@ -37233,6 +37277,10 @@ class Player extends _pixiJs.Sprite {
         this.power_up = true;
         console.log(this.power_up);
     }
+    damage() {
+        this.health -= 1;
+        console.log("you got hit");
+    }
     update() {
         this.x += this.xspeed;
         this.y += this.yspeed;
@@ -37273,13 +37321,43 @@ class Enemy extends _pixiJs.Sprite {
     speed = 0;
     constructor(texture, game){
         super(texture);
+        this.game = game;
     }
     update() {
         this.x -= this.speed;
     }
 }
 
-},{"pixi.js":"dsYej","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"33ylU":[function(require,module,exports) {
+},{"pixi.js":"dsYej","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"3x8wK":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "Shooting_ship", ()=>Shooting_ship
+);
+var _enemy = require("./Enemy");
+class Shooting_ship extends _enemy.Enemy {
+    constructor(texture, game){
+        super(texture, game);
+        this.scale.set(2, 2);
+        this.x = Math.floor(Math.random() * -1600) + -700;
+        this.y = Math.floor(Math.random() * 200) + -100;
+        this.speed = Math.random() * -4 + -2;
+        setTimeout(this.shoot, 5000);
+    }
+    changeSpeed() {
+        if (this.x >= 2500) this.speed = Math.random() * 6 + 1;
+        else this.speed = Math.random() * -6 + -1;
+    }
+    shoot() {
+        this.game.addEnemyBullet(this.x + 80, this.y + 35);
+    }
+    update() {
+        // if(this.speed > )
+        this.x -= this.speed;
+        if (this.x >= 2500 || this.x <= -1000) this.changeSpeed();
+    }
+}
+
+},{"./Enemy":"g0Hmc","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"33ylU":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "Explosion", ()=>Explosion
@@ -37346,6 +37424,9 @@ module.exports = require('./helpers/bundle-url').getBundleURL('jXrpa') + "bullet
 
 },{"./helpers/bundle-url":"lgJ39"}],"lEgYS":[function(require,module,exports) {
 module.exports = require('./helpers/bundle-url').getBundleURL('jXrpa') + "cargo_ship.3a7e8659.png" + "?" + Date.now();
+
+},{"./helpers/bundle-url":"lgJ39"}],"gUqvW":[function(require,module,exports) {
+module.exports = require('./helpers/bundle-url').getBundleURL('jXrpa') + "shooting_ship.f51318bf.png" + "?" + Date.now();
 
 },{"./helpers/bundle-url":"lgJ39"}]},["5EqNz","TyEjs"], "TyEjs", "parcelRequirea0e5")
 

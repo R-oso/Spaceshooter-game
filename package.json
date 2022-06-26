@@ -10,6 +10,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "pixi-timeout": "^1.0.4",
         "pixi.js": "^6.3.0"
     },
     "devDependencies": {
