@@ -1,13 +1,16 @@
 import * as PIXI from "pixi.js";
 import { Bullet } from "./Bullet";
+import { Enemy_bullet } from "./Enemy_bullet";
 import { Player } from "./player";
 import { Cargo_ship } from "./Cargo_ship";
+import { Shooting_ship } from "./Shooting_ship";
 import { Explosion } from "./Explosion";
 
 import background from "./images/background.webp";
 import player from "./images/ship.png";
 import bullet from "./images/bullet.png";
 import cargo_ship from "./images/cargo_ship.png";
+import shooting_ship from "./images/shooting_ship.png";
 
 export class Game {
   // Game eigenschappen
@@ -18,7 +21,9 @@ export class Game {
 
   private player: Player;
   private bullets: Bullet[] = [];
+  private enemy_bullets: Enemy_bullet[] = [];
   private cargo_ships: Cargo_ship[] = [];
+  private shooting_ships: Shooting_ship[] = [];
   private explosionTextures: PIXI.Texture[] = [];
 
   screenWidth: number = 2400;
@@ -34,7 +39,7 @@ export class Game {
 
     // Preload alle afbeeldingen
     this.loader = new PIXI.Loader();
-    this.loader.add("bgTexture", background).add("playerTexture", player).add("bulletTexture", bullet).add("cargoTexture", cargo_ship).add("spritesheet", "explosion.json");
+    this.loader.add("bgTexture", background).add("playerTexture", player).add("bulletTexture", bullet).add("cargoTexture", cargo_ship).add("shootingTexture", shooting_ship).add("spriteSheet", "explosion.json");
     this.loader.load(() => this.loadCompleted());
   }
 
@@ -45,17 +50,14 @@ export class Game {
     this.background.tileScale.set(2, 2);
     this.pixi.stage.addChild(this.background);
 
-    // Sla de player sprite sheet op
-    for (let i = 0; i < 26; i++) {
-      const player = PIXI.Texture.from(`player.json ${i + 1}.png`);
-      this.playerTextures.push(player);
-    }
-
     // Create de bestuurbare player
     this.createPlayer();
 
     // Create de cargo ships
     this.createCargoships();
+
+    // Create de shooting ships
+    this.createShootingships();
 
     // Create de eplosion frames
     this.createExplosionFrames();
@@ -78,8 +80,14 @@ export class Game {
       cargo_ship.update();
     }
 
-    // check collisions
+    // Update functie in shooting_ship
+    for (let shooting_ship of this.shooting_ships) {
+      shooting_ship.update();
+    }
+
+    // Check collisions
     this.checkCollisions();
+    this.playerDamage();
   }
 
   private createPlayer() {
@@ -95,9 +103,23 @@ export class Game {
     }
   }
 
+  private createShootingships() {
+    for (let i = 0; i < 5; i++) {
+      let s = new Shooting_ship(this.loader.resources["shootingTexture"].texture!, this);
+      this.shooting_ships.push(s);
+      this.pixi.stage.addChild(s);
+    }
+  }
+
   public addBullet(x: number, y: number) {
     let b = new Bullet(this.loader.resources["bulletTexture"].texture!, this, x, y);
     this.bullets.push(b);
+    this.pixi.stage.addChild(b);
+  }
+
+  public addEnemyBullet(x: number, y: number) {
+    let b = new Enemy_bullet(this.loader.resources["bulletTexture"].texture!, this, x, y);
+    this.enemy_bullets.push(b);
     this.pixi.stage.addChild(b);
   }
 
@@ -121,16 +143,25 @@ export class Game {
     }
   }
 
-  private collision(bullet: Bullet, cargo_ship: Cargo_ship) {
-    const bounds1 = bullet.getBounds();
-    const bounds2 = cargo_ship.getBounds();
+  private playerDamage() {
+    for (let cargo_ship of this.cargo_ships) {
+      if (this.collision(this.player, cargo_ship)) {
+        this.player.damage();
+        break;
+      }
+    }
+  }
+
+  private collision(sprite1: PIXI.Sprite, sprite2: PIXI.Sprite) {
+    const bounds1 = sprite1.getBounds();
+    const bounds2 = sprite2.getBounds();
+
     return bounds1.x < bounds2.x + bounds2.width && bounds1.x + bounds1.width > bounds2.x && bounds1.y < bounds2.y + bounds2.height && bounds1.y + bounds1.height > bounds2.y;
   }
 
   private createExplosionFrames() {
     for (let i = 0; i < 26; i++) {
       const texture = PIXI.Texture.from(`Explosion_Sequence_A ${i + 1}.png`);
-      console.log(texture);
       this.explosionTextures.push(texture);
     }
   }
