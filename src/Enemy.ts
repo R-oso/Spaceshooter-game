@@ -7,6 +7,7 @@ export class Enemy extends PIXI.Sprite {
 
   constructor(texture: PIXI.Texture, game: Game) {
     super(texture);
+    this.game = game;
   }
 
   public update() {
